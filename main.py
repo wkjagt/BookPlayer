@@ -3,7 +3,7 @@ import settings
 import sqlite3
 import player
 import pdb
-
+import mpd
 
 
 class BookReader(object):
@@ -78,26 +78,33 @@ class BookReader(object):
                 if book_id_from_rfid != self.current.book_id:
 
                     # stop the currently playing song
-                    if player_state == 'play':
+                    if self.mpd_client.status()['state'] == 'play':
                         self.stop()
                     
                     progress = self.db_cursor.execute(
                             'SELECT * FROM progress WHERE book_id = "%s"' % book_id_from_rfid).fetchone()
 
-                    self.current.set_progress(book_id_from_rfid, progress)
-                    self.play()
 
-            elif player_state == 'play':
+                    self.current.set_progress(book_id_from_rfid, progress)
+
+                    try:
+                        self.play()
+                    except mpd.CommandError:
+                        print "unable to load %s" % book_id_from_rfid
+                        self.current.reset()
+
+
+            elif self.mpd_client.status()['state'] == 'play':
                 self.stop()      
 
-            if player_state == 'play':
+            if self.mpd_client.status()['state'] == 'play':
 
                 # things to do each time music is playing
                 elapsed = self.mpd_client.status()['elapsed']
                 self.current.position = float(elapsed)
 
                 print elapsed
-
+                
                 self.db_cursor.execute(
                         'INSERT OR REPLACE INTO progress (book_id, volume, position) VALUES (%s, %d, %f)' %\
                         (self.current.book_id, self.current.volume, self.current.position))
@@ -117,7 +124,6 @@ class CurrentBook(object):
         self.__init__()
 
     def set_progress(self, book_id, progress):
-        
         self.reset()
         self.book_id = book_id
 
