@@ -17,9 +17,10 @@ class BookReader(object):
         self.mpd_client = player.MPDClient()
         player.mpdConnect(self.mpd_client, player.CON_ID)
 
-        #pdb.set_trace()
+        # clear any playlist items
+        self.mpd_client.clear()
 
-
+        # connect to database
         self.db_connt = sqlite3.connect('state.db')
 
         
@@ -53,6 +54,10 @@ class BookReader(object):
         self.mpd_client.add(filename)
         self.mpd_client.play()
         self.currently_playing = book_id
+
+
+        time.sleep(2)
+        pdb.set_trace()
 
     def set_position(self, seconds):
         # index can always be 0 because we always only have a playlist of length 1
@@ -91,8 +96,9 @@ class BookReader(object):
                 
 
 
-            #if self.currently_playing is not None:
-            #    # things to do each time music is playing
+            if self.currently_playing is not None:
+                # things to do each time music is playing
+                print self.mpd_client.status()['elapsed']
 
 
 
