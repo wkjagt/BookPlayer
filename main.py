@@ -17,6 +17,8 @@ class BookReader(object):
         self.mpd_client = player.MPDClient()
         player.mpdConnect(self.mpd_client, player.CON_ID)
 
+        # update mpd database with mp3 files
+        self.mpd_client.update()
         # clear any playlist items
         self.mpd_client.clear()
 
@@ -68,9 +70,7 @@ class BookReader(object):
 
         # when resuming go 20 seconds back
         seek = max(int(self.current.position) - 20, 0)
-
-        self.mpd_client.seek(0, 970)
-
+        self.mpd_client.seek(int(self.current.volume) - 1, seek)
 
     def start_loop(self):
         """
@@ -82,41 +82,33 @@ class BookReader(object):
 
             book_id_from_rfid = self.get_book_id()
 
-            if book_id_from_rfid is not None:
+            if book_id_from_rfid is not None and book_id_from_rfid != self.current.book_id: # a change in book id
+
+                # stop the currently playing song
+                if self.mpd_client.status()['state'] == 'play':
+                    self.stop()
                 
-                if book_id_from_rfid != self.current.book_id: # a change in book id
+                # get progress from db and start from saved position if it exists
+                progress = self.db_cursor.execute(
+                        'SELECT * FROM progress WHERE book_id = "%s"' % book_id_from_rfid).fetchone()
+                self.current.set_progress(book_id_from_rfid, progress)
 
-                    # stop the currently playing song
-                    if self.mpd_client.status()['state'] == 'play':
-                        self.stop()
-                    
-                    # get progress from db and start from saved position if it exists
-                    progress = self.db_cursor.execute(
-                            'SELECT * FROM progress WHERE book_id = "%s"' % book_id_from_rfid).fetchone()
-                    self.current.set_progress(book_id_from_rfid, progress)
-
-                    try:
-                        self.play()
-                    except mpd.CommandError:
-                        print "unable to load %s" % book_id_from_rfid
-                        self.current.reset()
-
-
-                if self.current.book_id and self.mpd_client.status()['state'] == 'stop':
-                    # a successful ending of an mp3 file
-                    print "Done!"
+                self.play()
 
             if self.mpd_client.status()['state'] == 'play':
                 self.on_playing()
-
+            else:
+                pdb.set_trace()
 
     def on_playing(self):
         # things to do each time music is playing
-        elapsed = self.mpd_client.status()['elapsed']
-        self.current.position = float(elapsed)
+        status = self.mpd_client.status()
+        self.current.position = float(status['elapsed'])
+        self.current.volume = int(status['song']) + 1
+       
 
-        print elapsed
-                
+        print "%s second of volume %s" % (self.current.position,  self.current.volume)
+
         self.db_cursor.execute(
                 'INSERT OR REPLACE INTO progress (book_id, volume, position) VALUES (%s, %d, %f)' %\
                 (self.current.book_id, self.current.volume, self.current.position))
