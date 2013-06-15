@@ -59,16 +59,16 @@ class BookReader(object):
     def play(self):
         self.mpd_client.clear()
 
-        filename = '%s.mp3' % (self.current.book_id)
-        print "trying to load %s" % filename
+        volumes = self.mpd_client.search('filename', self.current.book_id)
 
-        self.mpd_client.add(filename)
+        for volume in volumes:
+            self.mpd_client.add(volume['file'])
+
         self.mpd_client.play()
 
         # when resuming go 20 seconds back
         seek = max(int(self.current.position) - 20, 0)
 
-        # index can always be 0 because we always only have a playlist of length 1
         self.mpd_client.seek(0, 970)
 
 
