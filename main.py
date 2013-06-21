@@ -6,13 +6,13 @@ import pdb
 import mpd
 import signal
 import sys
+import rfid
 
 class BookReader(object):
 
-    sleep_time = .5
-
-
     def __init__(self):
+
+        self.rfid_reader = rfid.Reader("/dev/ttyAMA0", 9600, 14)
 
         self.mpd_client = player.MPDClient()
         player.mpdConnect(self.mpd_client, player.CON_ID)
@@ -37,21 +37,6 @@ class BookReader(object):
         sys.exit(0)
 
 
-    def get_book_id(self):
-
-        """
-        Get the id of the book from the RFID
-        """
-        # temporary to simulate RFID
-        try:
-            with file('mp3id') as f:
-                book_id = f.read()
-        except:
-            return None
-
-        return book_id.strip()
-
-
     def stop(self):
         self.current.reset()
         self.mpd_client.stop()
@@ -62,6 +47,11 @@ class BookReader(object):
         self.mpd_client.clear()
 
         volumes = self.mpd_client.search('filename', self.current.book_id)
+    
+        if not volumes:
+            print "unknown book id: %d" % self.current.book_id
+            return
+
 
         for volume in volumes:
             self.mpd_client.add(volume['file'])
@@ -77,12 +67,19 @@ class BookReader(object):
         The main event loop
         """
         while True:
+            
+            if self.mpd_client.status()['state'] == 'play':
+                self.on_playing()
 
-            time.sleep(self.sleep_time)
+            rfid_card = self.rfid_reader.read()
 
-            book_id_from_rfid = self.get_book_id()
+            if not rfid_card:
+                continue
+    
+            book_id_from_rfid = rfid_card.get_id()
 
-            if book_id_from_rfid is not None and book_id_from_rfid != self.current.book_id: # a change in book id
+
+            if book_id_from_rfid and book_id_from_rfid != self.current.book_id: # a change in book id
 
                 # stop the currently playing song
                 if self.mpd_client.status()['state'] == 'play':
@@ -94,11 +91,6 @@ class BookReader(object):
                 self.current.set_progress(book_id_from_rfid, progress)
 
                 self.play()
-
-            if self.mpd_client.status()['state'] == 'play':
-                self.on_playing()
-            else:
-                pdb.set_trace()
 
     def on_playing(self):
         # things to do each time music is playing
