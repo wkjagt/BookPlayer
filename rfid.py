@@ -12,12 +12,18 @@ class Reader(object):
         if not rcv:
             return
 
+
+        print rcv
+
         tag = {
             "raw" : rcv,
             "mfr" : int(rcv[1:5], 16),
             "id" : int(rcv[5:11], 16),
             "chk" : int(rcv[11:13], 16)
         }
+
+
+
 
         return Card(tag)
 
