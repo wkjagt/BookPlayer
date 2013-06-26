@@ -8,6 +8,21 @@ import rfid
 import RPi.GPIO as GPIO
 from mpd import MPDClient
 import RPi.GPIO as GPIO
+from threading import Lock
+
+class LockableMPDClient(MPDClient):
+    def __init__(self, use_unicode=False):
+        super(LockableMPDClient, self).__init__()
+        self.use_unicode = use_unicode
+        self._lock = Lock()
+    def acquire(self):
+        self._lock.acquire()
+    def release(self):
+        self._lock.release()
+    def __enter__(self):
+        self.acquire()
+    def __exit__(self, type, value, traceback):
+        self.release() 
 
 class BookReader(object):
 
@@ -59,6 +74,7 @@ class BookReader(object):
 
     def setup_db(self):
         """Setup a connection to the SQLite db"""
+
         self.db_conn = sqlite3.connect(self.db_file)
         self.db_cursor = self.db_conn.cursor()
 
@@ -69,12 +85,14 @@ class BookReader(object):
         Also update the MPD database with any new MP3 files that may have been added
         and clear any existing playlists.
         """
-        self.mpd_client = MPDClient()
-        self.mpd_client.connect(**self.mpd_conn)
 
-        self.mpd_client.update()
-        self.mpd_client.clear()
+        self.mpd_client = LockableMPDClient()
+        with self.mpd_client:
+            self.mpd_client.connect(**self.mpd_conn)
 
+            self.mpd_client.update()
+            self.mpd_client.clear()
+            self.mpd_client.setvol(100)
 
     def setup_gpio(self):
         """Setup all GPIO pins"""
@@ -88,56 +106,58 @@ class BookReader(object):
         # input pins for buttons
         for pin in self.gpio_pins:
             GPIO.setup(pin['pin_id'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(pin['pin_id'], GPIO.FALLING, callback=getattr(self, pin['callback']), bouncetime=500)
+            GPIO.add_event_detect(pin['pin_id'], GPIO.FALLING, callback=getattr(self, pin['callback']), bouncetime=200)
  
 
 
     def pause(self, channel):
         """Toggle playback status between play and pause"""
-
-        if not self.paused:
-            self.paused = True
-            self.mpd_client.pause()
-        else:
-            self.paused = False
-            self.mpd_client.play()
-
+        
+        with self.mpd_client:
+            state = self.mpd_client.status()['state']
+            if state == 'play':
+                self.mpd_client.pause()
+            elif state == 'pause':
+                self.mpd_client.play()
 
     def rewind(self, channel):
         """Rewind current track by 20 seconds"""
-        if self.playing:
 
-            seek = max(int(self.current.position) - 20, 0)
-            self.mpd_client.seek(int(self.current.volume) - 1, seek)
+        with self.mpd_client:
+            if self.playing:
+                seek = max(int(self.current.position) - 20, 0)
+                self.mpd_client.seek(int(self.current.volume) - 1, seek)
 
 
     def volume_up(self, channel):
         """Volume up by 10 percent"""
-        try:
-            volume = int(self.mpd_client.status()['volume'])
-            self.set_volume(min(volume + 10, 100))
-        except KeyError:
-            pass
 
+        with self.mpd_client:
+            volume = int(self.mpd_client.status()['volume'])
+        self.set_volume(min(volume + 10, 100))
     
     def volume_down(self, channel):
         """Volume down by 10 percent"""
-
-        try:
+    
+        with self.mpd_client:
             volume = int(self.mpd_client.status()['volume'])
-            self.set_volume(max(volume - 10, 0))
-        except KeyError:
-            pass
+        self.set_volume(max(volume - 10, 0))
 
 
     def set_volume(self, volume):
-        self.mpd_client.setvol(volume)
-        print "volume set to %d" % volume
-    
+        """Set the volume on the MPD client"""
+
+        with self.mpd_client:
+            self.mpd_client.setvol(volume)
+            print "volume set to %d" % volume
+
     def signal_handler(self, signal, frame):
         """When quiting, stop playback, and release GPIO pins"""
 
         self.stop()
+        self.mpd_client.close()
+        self.mpd_client.disconnect()
+
         GPIO.cleanup()
         sys.exit(0)
 
@@ -147,12 +167,14 @@ class BookReader(object):
         
         In contract to pausing, stopping is actually meant to completely stop playing
         the current book and start listening to another"""
+        print "stopping"
 
         self.playing = False
         self.current.reset()
-        self.mpd_client.stop()
-        self.mpd_client.clear()
-
+        
+        with self.mpd_client:
+            self.mpd_client.stop()
+            self.mpd_client.clear()
 
     def play(self):
         """Play the book as defined in self.current
@@ -162,21 +184,24 @@ class BookReader(object):
         3. Immediately set the position the last know position to resume playback where
            we last left off"""
 
-        self.mpd_client.clear()
+        with self.mpd_client:
+            self.mpd_client.clear()
 
-        volumes = self.mpd_client.search('filename', self.current.book_id)
+            volumes = self.mpd_client.search('filename', self.current.book_id)
     
-        if not volumes:
-            print "unknown book id: %d" % self.current.book_id
-            return
+            if not volumes:
+                print "unknown book id: %d" % self.current.book_id
+                return
 
-        for volume in volumes:
-            self.mpd_client.add(volume['file'])
+            for volume in volumes:
+                self.mpd_client.add(volume['file'])
 
-        self.mpd_client.play()
-        self.playing = True
-        # resume at last known position
-        self.mpd_client.seek(int(self.current.volume) - 1, int(self.current.position))
+            print volumes
+
+            self.mpd_client.play()
+            self.playing = True
+            # resume at last known position
+            self.mpd_client.seek(int(self.current.volume) - 1, int(self.current.position))
 
     def start_loop(self):
         """The main event loop. This is where we look for new RFID cards on the RFID reader. If one is
@@ -188,12 +213,18 @@ class BookReader(object):
         """
 
         while True:
-            
             # any events while playing should be done in self.on_playing()
-            if self.mpd_client.status()['state'] == 'play':
+            with self.mpd_client:
+                print self.mpd_client.status()['state']
+                if self.mpd_client.status()['state'] == 'play':
+                    self.playing = True
+                else:
+                    self.playing = False
+
+
+            if self.playing:
                 self.on_playing()
-            else:
-                self.playing = False
+
 
             rfid_card = self.rfid_reader.read()
 
@@ -220,15 +251,10 @@ class BookReader(object):
         """Executed for each loop execution. Here we update self.current with the latest know position
         and save the prigress to db"""
 
-        try:
+        with self.mpd_client:
             status = self.mpd_client.status()
             self.current.position = float(status['elapsed'])
             self.current.volume = int(status['song']) + 1
-        except KeyError:
-            print "status error"
-            print status
-            return
-       
 
         print "%s second of volume %s" % (self.current.position,  self.current.volume)
 
