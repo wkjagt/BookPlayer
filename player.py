@@ -114,6 +114,8 @@ class Player(object):
 
             self.mpd_client.play()
 
+            self.book.book_id = book_id
+
             if progress:
                 # resume at last known position
                 self.book.set_progress(progress)
