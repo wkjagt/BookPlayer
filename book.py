@@ -19,8 +19,8 @@ class Book(object):
         """Set progess from db result"""
 
         if progress:
-            self.part = progress[1]
-            self.elapsed = progress[2]
+            self.elapsed = progress[1]
+            self.part = progress[2]
 
     def is_playing(self):
         """returns if we have a current book"""
