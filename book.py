@@ -17,8 +17,6 @@ class Book(object):
 
     def set_progress(self, progress):
         """Set progess from db result"""
-        self.reset()
-        self.book_id = book_id
 
         if progress:
             self.part = progress[1]
