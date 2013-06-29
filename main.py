@@ -44,7 +44,7 @@ class BookReader(object):
         signal.signal(signal.SIGINT, self.signal_handler)
         
         self.setup_db()
-        self.player = Player(mpd_conn)
+        self.player = Player(self.mpd_conn)
         self.setup_gpio()
 
 
