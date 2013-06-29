@@ -113,7 +113,7 @@ class Player(object):
 
             # stop the currently playing song
             if self.is_playing():
-                self.stop()
+                self.mpd_client.stop()
 
             self.mpd_client.play()
 
