@@ -96,10 +96,6 @@ class BookReader(object):
 
             if book_id and book_id != self.player.book.book_id: # a change in book id
 
-                # stop the currently playing song
-                if self.player.is_playing():
-                    self.player.stop()
-                
                 progress = self.db_cursor.execute(
                         'SELECT * FROM progress WHERE book_id = "%s"' % book_id).fetchone()
 

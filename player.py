@@ -111,6 +111,9 @@ class Player(object):
             for part in parts:
                 self.mpd_client.add(part['file'])
 
+            # stop the currently playing song
+            if self.is_playing():
+                self.stop()
 
             self.mpd_client.play()
 
