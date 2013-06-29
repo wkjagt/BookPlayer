@@ -7,7 +7,7 @@ class Book(object):
 
         self.book_id = None
         self.volume = 1
-        self.position = 0
+        self.elapsed = .0
 
 
     def reset(self):
@@ -21,8 +21,8 @@ class Book(object):
         self.book_id = book_id
 
         if progress:
-            self.volume = progress[1]
-            self.position = progress[2]
+            self.part = progress[1]
+            self.elapsed = progress[2]
 
     def is_playing(self):
         """returns if we have a current book"""

@@ -51,8 +51,8 @@ class Player(object):
     def rewind(self, channel):
         if self.is_playing():
             with self.mpd_client:
-                seek = max(int(self.book.position) - 20, 0)
-                self.mpd_client.seek(int(self.book.volume) - 1, seek)
+                seek = max(int(self.book.elapsed) - 20, 0)
+                self.mpd_client.seek(int(self.book.part) - 1, seek)
 
 
     def volume_up(self, channel):
@@ -94,7 +94,7 @@ class Player(object):
     def play(self, book_id, progress=None):
         """Play the book as defined in self.book
         
-        1. Get the volumes (parts) from the current book and add them to the playlsit
+        1. Get the parts from the current book and add them to the playlsit
         2. Start playing the playlist
         3. Immediately set the position the last know position to resume playback where
            we last left off"""
@@ -102,14 +102,14 @@ class Player(object):
         with self.mpd_client:
             self.mpd_client.clear()
 
-            volumes = self.mpd_client.search('filename', book_id)
+            parts = self.mpd_client.search('filename', book_id)
     
-            if not volumes:
+            if not parts:
                 print "Unused book id: %d" % book_id
                 return
 
-            for volume in volumes:
-                self.mpd_client.add(volume['file'])
+            for part in parts:
+                self.mpd_client.add(part['file'])
 
 
             self.mpd_client.play()
@@ -117,7 +117,7 @@ class Player(object):
             if progress:
                 # resume at last known position
                 self.book.set_progress(progress)
-                self.mpd_client.seek(int(self.book.volume) - 1, int(self.book.position))
+                self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
 
 
     def is_playing(self):

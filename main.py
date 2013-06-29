@@ -108,19 +108,19 @@ class BookReader(object):
     
     def on_playing(self):
 
-        """Executed for each loop execution. Here we update self.player.book with the latest know position
+        """Executed for each loop execution. Here we update self.player.book with the latest known position
         and save the prigress to db"""
 
         status = self.player.get_status()
 
-        self.player.book.position = float(status['elapsed'])
-        self.player.book.volume = int(status['song']) + 1
+        self.player.book.elapsed = float(status['elapsed'])
+        self.player.book.part = int(status['song']) + 1
 
-        print "%s second of volume %s" % (self.player.book.position,  self.player.book.volume)
+        print "%s second of part %s" % (self.player.book.elapsed,  self.player.book.part)
 
         self.db_cursor.execute(
-                'INSERT OR REPLACE INTO progress (book_id, volume, position) VALUES (%s, %d, %f)' %\
-                (self.player.book.book_id, self.player.book.volume, self.player.book.position))
+                'INSERT OR REPLACE INTO progress (book_id, part, elapsed) VALUES (%s, %d, %f)' %\
+                (self.player.book.book_id, self.player.book.part, self.player.book.elapsed))
 
         self.db_conn.commit()
 
