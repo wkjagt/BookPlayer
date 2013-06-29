@@ -5,8 +5,6 @@ import signal
 import sys
 import rfid
 import RPi.GPIO as GPIO
-import RPi.GPIO as GPIO
-from threading import Lock
 from player import Player
 
 class BookReader(object):

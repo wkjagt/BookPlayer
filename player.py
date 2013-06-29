@@ -1,4 +1,5 @@
 from mpd import MPDClient
+from threading import Lock
 from book import Book
 
 class LockableMPDClient(MPDClient):
