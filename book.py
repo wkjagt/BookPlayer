@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+"""
+book.py
+
+Contains the class that represents the book that is currently playing
+"""
+
+
+__version_info__ = (0, 0, 1)
+__version__ = '.'.join(map(str, __version_info__))
+__author__ = "Willem van der Jagt"
+
+
 class Book(object):
     """The book that is currenty playing"""
 
