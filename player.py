@@ -2,8 +2,7 @@ from mpd import MPDClient
 from threading import Lock
 from book import Book
 
-from pprint import pprint
-import logging
+import re
 
 class LockableMPDClient(MPDClient):
     def __init__(self, use_unicode=False):
@@ -92,7 +91,6 @@ class Player(object):
             self.mpd_client.clear()
 
 
-
     def play(self, book_id, progress=None):
         """Play the book as defined in self.book
         
@@ -100,6 +98,19 @@ class Player(object):
         2. Start playing the playlist
         3. Immediately set the position the last know position to resume playback where
            we last left off"""
+
+        def sorting(file1, file2):
+
+            """sorting algorithm for files in playlist"""
+            pattern = '(\d+)(-(\d+))?\.mp3'
+            
+            try:
+                file1_index = re.search(pattern, file1).groups()[2] or 0
+                file2_index = re.search(pattern, file2).groups()[2] or 0
+
+                return -1 if int(file1_index) < int(file2_index) else 1
+            except:
+                return 0
 
 
         with self.mpd_client:
@@ -113,7 +124,7 @@ class Player(object):
 
             self.mpd_client.clear()
             
-            for part in parts:
+            for part in parts.sorted(cmp=sorting):
                 self.mpd_client.add(part['file'])
 
             self.book.book_id = book_id
