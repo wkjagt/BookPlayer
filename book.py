@@ -6,7 +6,7 @@ class Book(object):
         """Initialize"""
 
         self.book_id = None
-        self.volume = 1
+        self.part = 1
         self.elapsed = .0
 
 

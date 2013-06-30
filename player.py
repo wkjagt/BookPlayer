@@ -62,7 +62,6 @@ class Player(object):
 
 
     def volume_down(self, channel):
-        self.player.volume_down()
 
         volume = int(self.get_status()['volume'])
         self.set_volume(max(volume - 10, 0))
