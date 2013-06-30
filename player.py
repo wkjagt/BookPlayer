@@ -118,7 +118,7 @@ class Player(object):
             parts = self.mpd_client.search('filename', book_id)
     
             if not parts:
-                print "Unused book id: %d" % book_id
+                print "Unused card: %d" % book_id
                 return
 
             self.mpd_client.clear()
@@ -139,10 +139,22 @@ class Player(object):
     def is_playing(self):
         return self.get_status()['state'] == 'play'
 
+    def finished_book(self):
+        status = self.get_status()
+        return self.book.book_id is not None and \
+               status['state'] == 'stopped' and \
+               self.book.part == status['playlistlength'] and \
+               self.get_file_info()['Time'] - self.book.elapsed < 20
+
 
     def get_status(self):
         with self.mpd_client:
             return self.mpd_client.status()
+
+
+    def get_file_info(self):
+        with self.mpd_client:
+            return self.mpd_client.currentsong()
 
 
     def close(self):

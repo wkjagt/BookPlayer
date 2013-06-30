@@ -86,6 +86,10 @@ class BookReader(object):
 
             if self.player.is_playing():
                 self.on_playing()
+            elif self.player.finished_book():
+                self.db_cursor.execute(
+                        'DELETE FROM progress WHERE book_id = %d' % self.player.book.book_id)
+
 
             rfid_card = self.rfid_reader.read()
 
