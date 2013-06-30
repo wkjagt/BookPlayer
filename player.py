@@ -119,7 +119,6 @@ class Player(object):
     
             if not parts:
                 print "Unused book id: %d" % book_id
-                self.book.book_id = None
                 return
 
             self.mpd_client.clear()
