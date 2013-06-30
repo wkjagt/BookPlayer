@@ -99,7 +99,7 @@ class Player(object):
         3. Immediately set the position the last know position to resume playback where
            we last left off"""
 
-        def sorting(file1, file2):
+        def sorter(file1, file2):
 
             """sorting algorithm for files in playlist"""
             pattern = '(\d+)(-(\d+))?\.mp3'
@@ -124,7 +124,7 @@ class Player(object):
 
             self.mpd_client.clear()
             
-            for part in parts.sorted(cmp=sorting):
+            for part in sorted(parts, cmp=sorter):
                 self.mpd_client.add(part['file'])
 
             self.book.book_id = book_id
