@@ -2,6 +2,9 @@ from mpd import MPDClient
 from threading import Lock
 from book import Book
 
+from pprint import pprint
+import logging
+
 class LockableMPDClient(MPDClient):
     def __init__(self, use_unicode=False):
         super(LockableMPDClient, self).__init__()
@@ -98,8 +101,8 @@ class Player(object):
         3. Immediately set the position the last know position to resume playback where
            we last left off"""
 
+
         with self.mpd_client:
-            self.mpd_client.clear()
 
             parts = self.mpd_client.search('filename', book_id)
     
@@ -108,13 +111,10 @@ class Player(object):
                 self.book.book_id = None
                 return
 
+            self.mpd_client.clear()
+            
             for part in parts:
                 self.mpd_client.add(part['file'])
-
-            # stop the currently playing song
-            self.mpd_client.stop()
-
-            self.mpd_client.play()
 
             self.book.book_id = book_id
 
@@ -122,6 +122,8 @@ class Player(object):
                 # resume at last known position
                 self.book.set_progress(progress)
                 self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
+            else:
+                self.mpd_client.play()
 
 
     def is_playing(self):
