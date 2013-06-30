@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+"""
+player.py
+
+The audio player. A simple wrapper around the MPD client. Uses a lockable version
+of the MPD client object, because we're using multiple threads
+"""
+
+
+__version_info__ = (0, 0, 1)
+__version__ = '.'.join(map(str, __version_info__))
+__author__ = "Willem van der Jagt"
+
+
 from mpd import MPDClient
 from threading import Lock
 from book import Book
