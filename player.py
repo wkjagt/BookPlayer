@@ -127,24 +127,32 @@ class Player(object):
                 self.mpd_client.add(part['file'])
 
             self.book.book_id = book_id
+            
 
             if progress:
                 # resume at last known position
                 self.book.set_progress(progress)
                 self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
             else:
+                # start playing from the beginning
                 self.mpd_client.play()
+
+        self.book.file_info = self.get_file_info()
 
 
     def is_playing(self):
         return self.get_status()['state'] == 'play'
 
     def finished_book(self):
+        """return if a book has finished, in which case we need to delete it from the db
+        or otherwise we could never listen to that particular book again"""
+        
         status = self.get_status()
         return self.book.book_id is not None and \
-               status['state'] == 'stopped' and \
-               self.book.part == status['playlistlength'] and \
-               self.get_file_info()['Time'] - self.book.elapsed < 20
+               status['state'] == 'stop' and \
+               self.book.part == int(status['playlistlength']) and \
+               'time' in self.book.file_info and float(self.book.file_info['time']) - self.book.elapsed < 20
+
 
 
     def get_status(self):

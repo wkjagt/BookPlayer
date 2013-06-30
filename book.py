@@ -8,7 +8,7 @@ class Book(object):
         self.book_id = None
         self.part = 1
         self.elapsed = .0
-
+        self.file_info = None
 
     def reset(self):
         """Reset progress"""

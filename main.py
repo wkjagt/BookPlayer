@@ -2,7 +2,7 @@ import time
 import sqlite3
 import pdb
 import signal
-import sys
+import sys, os
 import rfid
 import RPi.GPIO as GPIO
 from player import Player
@@ -22,7 +22,7 @@ class BookReader(object):
               status() all the time"""
 
 
-    db_file = 'state.db'
+    db_file = "%s/%s" % (os.path.dirname(os.path.realpath(__file__)), 'state.db')
     serial = { "port_name" : "/dev/ttyAMA0", "baudrate" : 9600, "string_length" : 14 }
     mpd_conn = { "host" : "localhost", "port" : 6600 }
     gpio_pins = [
@@ -84,12 +84,18 @@ class BookReader(object):
 
         while True:
 
+            print self.player.finished_book()
+
+
             if self.player.is_playing():
                 self.on_playing()
             elif self.player.finished_book():
+                # when at the end of a book, delete its progress from the db
+                # so we can listen to it again
                 self.db_cursor.execute(
-                        'DELETE FROM progress WHERE book_id = %d' % self.player.book.book_id)
-
+                    'DELETE FROM progress WHERE book_id = %d' % self.player.book.book_id)
+                self.db_conn.commit()
+                self.player.book.reset()
 
             rfid_card = self.rfid_reader.read()
 
@@ -116,7 +122,7 @@ class BookReader(object):
         self.player.book.elapsed = float(status['elapsed'])
         self.player.book.part = int(status['song']) + 1
 
-        print "%s second of part %s" % (self.player.book.elapsed,  self.player.book.part)
+        #print "%s second of part %s" % (self.player.book.elapsed,  self.player.book.part)
 
         self.db_cursor.execute(
                 'INSERT OR REPLACE INTO progress (book_id, part, elapsed) VALUES (%s, %d, %f)' %\
