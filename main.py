@@ -19,52 +19,31 @@ import pdb
 import signal
 import sys, os
 import rfid
+import config
 import RPi.GPIO as GPIO
 from player import Player
 
 class BookReader(object):
 
-    """The main class that controls the player, the GPIO pins and the RFID reader
-    
-    Attributes:
-
-    db_file : the SQLite file used to store the progress
-    serial : settings for the serial port that the RFID reader connects to
-    mpd_conn : the connection details for the MPD client
-    gpio_pins : the ids of the GPIO input pins and their callbacks
-    status_light_pin : the pin used by the status light
-    playing : keep track of playing status. rather use this instead of calling
-              status() all the time"""
-
-
-    db_file = "%s/%s" % (os.path.dirname(os.path.realpath(__file__)), 'state.db')
-    serial = { "port_name" : "/dev/ttyAMA0", "baudrate" : 9600, "string_length" : 14 }
-    mpd_conn = { "host" : "localhost", "port" : 6600 }
-    gpio_pins = [
-        { 'pin_id': 9, 'callback' : 'rewind' },
-        { 'pin_id': 11, 'callback' : 'toggle_pause' },
-        { 'pin_id': 22, 'callback' : 'volume_down' },
-        { 'pin_id': 10, 'callback' : 'volume_up' }
-    ]
-    status_light_pin = 23
+    """The main class that controls the player, the GPIO pins and the RFID reader"""
 
 
     def __init__(self):
         """Initialize all the things"""
 
-        self.rfid_reader = rfid.Reader(**self.serial)
+        self.rfid_reader = rfid.Reader(**config.serial)
         
         signal.signal(signal.SIGINT, self.signal_handler)
         
         self.setup_db()
-        self.player = Player(self.mpd_conn)
+        self.player = Player(config.mpd_conn)
         self.setup_gpio()
 
 
     def setup_db(self):
         """Setup a connection to the SQLite db"""
 
-        self.db_conn = sqlite3.connect(self.db_file)
+        self.db_conn = sqlite3.connect(config.db_file)
         self.db_cursor = self.db_conn.cursor()
 
     def setup_gpio(self):
@@ -73,11 +52,11 @@ class BookReader(object):
         GPIO.setmode(GPIO.BCM)
         
         # status light
-        GPIO.setup(self.status_light_pin, GPIO.OUT)
+        GPIO.setup(status.status_light_pin, GPIO.OUT)
         GPIO.output(self.status_light_pin, True)
 
         # input pins for buttons
-        for pin in self.gpio_pins:
+        for pin in config.gpio_pins:
             GPIO.setup(pin['pin_id'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.add_event_detect(pin['pin_id'], GPIO.FALLING, callback=getattr(self.player, pin['callback']), bouncetime=200)
 
