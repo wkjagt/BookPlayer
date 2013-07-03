@@ -20,8 +20,8 @@ class StatusLight(object):
 
 		GPIO.setmode(GPIO.BCM)
 
-		GPIO.setup(config.status_light_pin, GPIO.OUT)
-		GPIO.output(self.status_light_pin, True)
+		GPIO.setup(pin_id, GPIO.OUT)
+		# GPIO.output(self.status_light_pin, True)
 
 
 	
@@ -70,6 +70,6 @@ class StatusLight(object):
 		
 		
 if __name__ == '__main__':
-	light = StatusLight()
+	light = StatusLight(config.status_light_pin)
 	light.interrupt('blink_fast', 3)
 	light.do('blink')
