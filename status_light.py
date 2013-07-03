@@ -57,11 +57,6 @@ class StatusLight(object):
                 self.set_state(state)
 
     
-    def off(self, state):
-        """Turn off status light"""
-        self.cont = False
-        self.set_state(state)
-    
     def set_state(self, state):
         """Turn the light on or off"""
         GPIO.output(self.pin_id, state)  
