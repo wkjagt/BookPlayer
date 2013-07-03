@@ -1,11 +1,12 @@
 import time
 import config
+import RPi.GPIO as GPIO
 
 class StatusLight(object):
   
 	"""available patterns for the status light"""
 	patterns = {
-		'blink_fast' : (.1, [False, True]),
+		'blink_fast' : (.01, [False, True]),
 		'blink' : (.5, [False, True]),
 	}
 
@@ -16,8 +17,11 @@ class StatusLight(object):
 	"""continue flashing, controlled by the stop"""
 	cont = True
 
+        pin_id = None
+
 	def __init__(self, pin_id):
 
+                self.pin_id = pin_id
 		GPIO.setmode(GPIO.BCM)
 
 		GPIO.setup(pin_id, GPIO.OUT)
@@ -64,9 +68,10 @@ class StatusLight(object):
 		
 	def set_state(self, state):
 		"""Turn the light on or off"""
-		print 'set state to %s' % state	
+		GPIO.output(self.pin_id, state)	
 		
-		
+        def __del__(self):
+            GPIO.cleanup()
 		
 		
 if __name__ == '__main__':
