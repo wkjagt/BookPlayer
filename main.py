@@ -36,9 +36,13 @@ class BookReader(object):
         self.rfid_reader = rfid.Reader(**config.serial)
         
         signal.signal(signal.SIGINT, self.signal_handler)
-        
+       
+        self.status_light = StatusLight(config.status_light_pin)
+        thread = Thread(target=self.status_light.start)
+        thread.start()
+
         self.setup_db()
-        self.player = Player(config.mpd_conn)
+        self.player = Player(config.mpd_conn, self.status_light)
         self.setup_gpio()
 
 
@@ -48,15 +52,11 @@ class BookReader(object):
         self.db_conn = sqlite3.connect(config.db_file)
         self.db_cursor = self.db_conn.cursor()
 
+
     def setup_gpio(self):
         """Setup all GPIO pins"""
 
         GPIO.setmode(GPIO.BCM)
-
-        self.status_light = StatusLight(config.status_light_pin)
-        thread = Thread(target=threaded_function)
-
-
 
         # input pins for buttons
         for pin in config.gpio_pins:
@@ -70,6 +70,7 @@ class BookReader(object):
         self.player.close()
         GPIO.cleanup()
         sys.exit(0)
+
 
     def loop(self):
         """The main event loop. This is where we look for new RFID cards on the RFID reader. If one is

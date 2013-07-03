@@ -17,8 +17,9 @@ __author__ = "Willem van der Jagt"
 from mpd import MPDClient
 from threading import Lock
 from book import Book
-
+import config
 import re
+
 
 class LockableMPDClient(MPDClient):
     def __init__(self, use_unicode=False):
@@ -39,12 +40,13 @@ class Player(object):
 
     """The class responsible for playing the audio books"""
 
-    def __init__(self, conn_details):
+    def __init__(self, conn_details, status_light):
         """Setup a connection to MPD to be able to play audio.
         
         Also update the MPD database with any new MP3 files that may have been added
         and clear any existing playlists.
         """
+        self.status_light = status_light
         self.book = Book()
 
         self.mpd_client = LockableMPDClient()
@@ -62,11 +64,18 @@ class Player(object):
         with self.mpd_client:
             state = self.mpd_client.status()['state']
             if state == 'play':
+                self.status_light.action = 'blink_pauze'
                 self.mpd_client.pause()
             elif state == 'pause':
+                self.status_light.action = 'blink'
                 self.mpd_client.play()
+            else:
+                self.status_light.interrupt('blink_fast', 3)
 
     def rewind(self, channel):
+        
+        self.status_light.interrupt('blink_fast', 3)
+        
         if self.is_playing():
             with self.mpd_client:
                 seek = max(int(self.book.elapsed) - 20, 0)
@@ -74,7 +83,6 @@ class Player(object):
 
 
     def volume_up(self, channel):
-
         volume = int(self.get_status()['volume'])
         self.set_volume(min(volume + 10, 100))
 
@@ -87,7 +95,7 @@ class Player(object):
 
     def set_volume(self, volume):
         """Set the volume on the MPD client"""
-
+        self.status_light.interrupt('blink_fast', 3)
         with self.mpd_client:
             self.mpd_client.setvol(volume)
             print "volume set to %d" % volume
@@ -102,6 +110,8 @@ class Player(object):
         self.playing = False
         self.book.reset()
         
+        self.status_light.action = 'on'
+
         with self.mpd_client:
             self.mpd_client.stop()
             self.mpd_client.clear()
@@ -152,7 +162,8 @@ class Player(object):
             else:
                 # start playing from the beginning
                 self.mpd_client.play()
-
+        
+        self.status_light.action = 'blink'
         self.book.file_info = self.get_file_info()
 
 
