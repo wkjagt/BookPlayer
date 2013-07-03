@@ -15,6 +15,7 @@ status_light_pin : the pin used by the status light
 playing : keep track of playing status. rather use this instead of calling
           status() all the time"""
 
+import os
 
 __version_info__ = (0, 0, 1)
 __version__ = '.'.join(map(str, __version_info__))
