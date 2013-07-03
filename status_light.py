@@ -1,4 +1,5 @@
 import time
+import config
 
 class StatusLight(object):
   
@@ -14,6 +15,15 @@ class StatusLight(object):
 	
 	"""continue flashing, controlled by the stop"""
 	cont = True
+
+	def __init__(self, pin_id):
+
+		GPIO.setmode(GPIO.BCM)
+
+		GPIO.setup(config.status_light_pin, GPIO.OUT)
+		GPIO.output(self.status_light_pin, True)
+
+
 	
 	def interrupt(self, action, repeat = 1):
 		"""Interupt the current status of the light with a names action
@@ -63,4 +73,3 @@ if __name__ == '__main__':
 	light = StatusLight()
 	light.interrupt('blink_fast', 3)
 	light.do('blink')
-	

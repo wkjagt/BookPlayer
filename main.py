@@ -50,10 +50,6 @@ class BookReader(object):
         """Setup all GPIO pins"""
 
         GPIO.setmode(GPIO.BCM)
-        
-        # status light
-        GPIO.setup(status.status_light_pin, GPIO.OUT)
-        GPIO.output(self.status_light_pin, True)
 
         # input pins for buttons
         for pin in config.gpio_pins:
