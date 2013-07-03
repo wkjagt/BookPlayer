@@ -1,4 +1,4 @@
-import time
+import time, sys
 import config
 import RPi.GPIO as GPIO
 
@@ -25,11 +25,7 @@ class StatusLight(object):
     def __init__(self, pin_id):
 
         self.pin_id = pin_id
-        GPIO.setmode(GPIO.BCM)
-
-        GPIO.setup(pin_id, GPIO.OUT)
-        self.action = 'on'
-  
+ 
     def interrupt(self, action, repeat = 1):
         """Interupt the current status of the light with a names action
     
@@ -43,8 +39,12 @@ class StatusLight(object):
 
     def start(self):
         """Perform a status light action"""
+        GPIO.setmode(GPIO.BCM)
 
-        while True:
+        GPIO.setup(self.pin_id, GPIO.OUT)
+        self.action = 'on'
+ 
+        while self.cont:
 
             for state in self.patterns[self.action][1]:
                 # if the interrupt_pattern is not empty, prioritize it
@@ -55,12 +55,18 @@ class StatusLight(object):
                 # peform the regular action when not interrupted
                 time.sleep(self.patterns[self.action][0])
                 self.set_state(state)
+        
+        sys.exit(0)
 
     
     def set_state(self, state):
         """Turn the light on or off"""
         GPIO.output(self.pin_id, state)  
+
+    def exit(self):
+        self.cont = False
     
+
     def __del__(self):
         GPIO.cleanup()
     

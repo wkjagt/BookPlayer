@@ -67,6 +67,7 @@ class BookReader(object):
     def signal_handler(self, signal, frame):
         """When quiting, stop playback, close the player and release GPIO pins"""
 
+        self.status_light.exit()
         self.player.close()
         GPIO.cleanup()
         sys.exit(0)
