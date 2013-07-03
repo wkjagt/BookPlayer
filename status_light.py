@@ -6,6 +6,8 @@ class StatusLight(object):
   
     """available patterns for the status light"""
     patterns = {
+        'on' : (.5, [True]),
+        'off' : (.5, [False]),
         'blink_fast' : (.01, [False, True]),
         'blink' : (.5, [False, True]),
     }
@@ -25,6 +27,8 @@ class StatusLight(object):
         GPIO.setmode(GPIO.BCM)
 
         GPIO.setup(pin_id, GPIO.OUT)
+
+        self.action = 'on'
   
     def interrupt(self, action, repeat = 1):
         """Interupt the current status of the light with a names action
@@ -38,25 +42,23 @@ class StatusLight(object):
 
 
 
-        def do(self, action):
-        """Perform a status light action
+    def start(self):
+        """Perform a status light action"""
 
-        paramaters: action: the name of tehe action"""
+        while True:
 
-        if(len(self.interrupt_pattern[1])):
-              # if the interrupt_pattern is not empty, prioritize it
-              time.sleep(self.interrupt_pattern[0])
-              self.set_state(self.interrupt_pattern[1].pop(0))
-              return self.do(action)
+        # if(len(self.interrupt_pattern[1])):
+        #     # if the interrupt_pattern is not empty, prioritize it
+        #     time.sleep(self.interrupt_pattern[0])
+        #     self.set_state(self.interrupt_pattern[1].pop(0))
+        #     return self.do(action)
 
-        for state in self.patterns[action][1]:
-            # peform the regular action when not interrupted
-            time.sleep(self.patterns[action][0])
-            self.set_state(state)
-    
-        if self.cont:
-            # continue of not stopped
-            self.do(action)
+            for state in self.patterns[self.action][1]:
+                # peform the regular action when not interrupted
+                time.sleep(self.patterns[self.action][0])
+                self.set_state(state)
+
+
     
     def off(self, state):
         """Turn off status light"""
@@ -73,5 +75,4 @@ class StatusLight(object):
     
 if __name__ == '__main__':
     light = StatusLight(config.status_light_pin)
-    light.interrupt('blink_fast', 3)
-    light.do('blink')
+    light.start()

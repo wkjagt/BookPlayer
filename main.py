@@ -22,6 +22,8 @@ import rfid
 import config
 import RPi.GPIO as GPIO
 from player import Player
+from status_light import StatusLight
+from threading import Thread
 
 class BookReader(object):
 
@@ -50,6 +52,11 @@ class BookReader(object):
         """Setup all GPIO pins"""
 
         GPIO.setmode(GPIO.BCM)
+
+        self.status_light = StatusLight(config.status_light_pin)
+        thread = Thread(target=threaded_function)
+
+
 
         # input pins for buttons
         for pin in config.gpio_pins:
