@@ -35,8 +35,11 @@ class BookReader(object):
 
         self.rfid_reader = rfid.Reader(**config.serial)
         
+        # setup signal handlers. SIGINT for KeyboardInterrupt
+        # and SIGTERM for when running from supervisord
         signal.signal(signal.SIGINT, self.signal_handler)
-       
+        signal.signal(signal.SIGTERM, self.signal_handler)
+
         self.status_light = StatusLight(config.status_light_pin)
         thread = Thread(target=self.status_light.start)
         thread.start()
