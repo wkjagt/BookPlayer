@@ -144,6 +144,7 @@ class Player(object):
             parts = self.mpd_client.search('filename', book_id)
     
             if not parts:
+                self.status_light.interrupt('blink_fast', 3)
                 print "Unused card: %d" % book_id
                 return
 

@@ -86,9 +86,6 @@ class BookReader(object):
 
         while True:
 
-            print self.player.finished_book()
-
-
             if self.player.is_playing():
                 self.on_playing()
             elif self.player.finished_book():
