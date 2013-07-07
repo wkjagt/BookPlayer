@@ -61,13 +61,18 @@ class StatusLight(object):
     
     def set_state(self, state):
         """Turn the light on or off"""
-        GPIO.output(self.pin_id, state)  
+        
+        if self.cont:
+            GPIO.output(self.pin_id, state)  
 
     def exit(self):
+        """Set self.cont to false to break out of the loop. we can't just call exit, because
+        this method is typically called from another thread, and we need to exit the status light thread"""
         self.cont = False
     
 
     def __del__(self):
+        """At the very last moment, cleanup GPIO"""
         GPIO.cleanup()
     
     
