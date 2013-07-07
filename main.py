@@ -85,35 +85,30 @@ class BookReader(object):
         """
 
         while True:
-            try:
-                if self.player.is_playing():
-                    self.on_playing()
-                elif self.player.finished_book():
-                    # when at the end of a book, delete its progress from the db
-                    # so we can listen to it again
-                    self.db_cursor.execute(
-                        'DELETE FROM progress WHERE book_id = %d' % self.player.book.book_id)
-                    self.db_conn.commit()
-                    self.player.book.reset()
+            if self.player.is_playing():
+                self.on_playing()
+            elif self.player.finished_book():
+                # when at the end of a book, delete its progress from the db
+                # so we can listen to it again
+                self.db_cursor.execute(
+                    'DELETE FROM progress WHERE book_id = %d' % self.player.book.book_id)
+                self.db_conn.commit()
+                self.player.book.reset()
 
-                rfid_card = self.rfid_reader.read()
+            rfid_card = self.rfid_reader.read()
 
-                if not rfid_card:
-                    continue
+            if not rfid_card:
+                continue
     
-                book_id = rfid_card.get_id()
+            book_id = rfid_card.get_id()
 
-                if book_id and book_id != self.player.book.book_id: # a change in book id
+            if book_id and book_id != self.player.book.book_id: # a change in book id
 
-                    progress = self.db_cursor.execute(
-                            'SELECT * FROM progress WHERE book_id = "%s"' % book_id).fetchone()
+                progress = self.db_cursor.execute(
+                        'SELECT * FROM progress WHERE book_id = "%s"' % book_id).fetchone()
 
-                    self.player.play(book_id, progress)
+                self.player.play(book_id, progress)
 
-            except:
-                # don't allow the main loop to crash
-                time.sleep(1)
-    
     def on_playing(self):
 
         """Executed for each loop execution. Here we update self.player.book with the latest known position
