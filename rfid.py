@@ -44,6 +44,8 @@ class Reader(object):
                     "id" : int(rcv[5:11], 16),
                     "chk" : int(rcv[11:13], 16)}
                     
+            print "READ CARD : %s" % tag['id']
+            
             return Card(tag)
         except:
             return None
