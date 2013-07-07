@@ -73,13 +73,35 @@ class Player(object):
                 self.status_light.interrupt('blink_fast', 3)
 
     def rewind(self, channel):
-        
+        """Rewind by 20s"""
+
         self.status_light.interrupt('blink_fast', 3)
         
         if self.is_playing():
+            song_index = int(self.book.part) - 1
+            elapsed = int(self.book.elapsed)
+
             with self.mpd_client:
-                seek = max(int(self.book.elapsed) - 20, 0)
-                self.mpd_client.seek(int(self.book.part) - 1, seek)
+
+                if elapsed > 20:
+                    # rewind withing current file if possible
+                    self.mpd_client.seek(song_index, elapsed - 20)
+                elif song_index > 0:
+                    # rewind to previous file if we're not yet 20 seconds into
+                    # the current file
+                    prev_song = self.mpd_client.playlistinfo(song_index - 1)[0]
+                    prev_song_len = int(prev_song['time'])
+
+                    # if the previous part is longer than 20 seconds, rewind to 20
+                    # seconds before the end, otherwise rewind to the start of it
+                    if prev_song_len > 20:
+                        self.mpd_client.seek(song_index - 1, prev_song_len - 20)
+                    else:
+                        self.mpd_client.seek(song_index - 1, 0)
+                else:
+                    # if we're less than 20 seconds into the first part, rewind
+                    # to the start of it
+                    self.mpd_client.seek(0, 0)
 
 
     def volume_up(self, channel):
@@ -145,7 +167,6 @@ class Player(object):
     
             if not parts:
                 self.status_light.interrupt('blink_fast', 3)
-                print "Unused card: %d" % book_id
                 return
 
             self.mpd_client.clear()
@@ -155,14 +176,14 @@ class Player(object):
 
             self.book.book_id = book_id
             
-
-            if progress:
+            self.mpd_client.seek(2,3)
+            #if progress:
                 # resume at last known position
-                self.book.set_progress(progress)
-                self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
-            else:
+                #self.book.set_progress(progress)
+                #self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
+            #else:
                 # start playing from the beginning
-                self.mpd_client.play()
+                #self.mpd_client.play()
         
         self.status_light.action = 'blink'
         self.book.file_info = self.get_file_info()
