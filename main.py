@@ -64,7 +64,7 @@ class BookReader(object):
         # input pins for buttons
         for pin in config.gpio_pins:
             GPIO.setup(pin['pin_id'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(pin['pin_id'], GPIO.FALLING, callback=getattr(self.player, pin['callback']), bouncetime=200)
+            GPIO.add_event_detect(pin['pin_id'], GPIO.FALLING, callback=getattr(self.player, pin['callback']), bouncetime=pin['bounce_time'])
 
 
     def signal_handler(self, signal, frame):
