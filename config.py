@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # encoding: utf-8
 
@@ -26,9 +25,9 @@ db_file = "%s/%s" % (os.path.dirname(os.path.realpath(__file__)), 'state.db')
 serial = { "port_name" : "/dev/ttyAMA0", "baudrate" : 9600, "string_length" : 14 }
 mpd_conn = { "host" : "localhost", "port" : 6600 }
 gpio_pins = [
-    { 'pin_id': 9, 'callback' : 'rewind' },
-    { 'pin_id': 11, 'callback' : 'toggle_pause' },
-    { 'pin_id': 22, 'callback' : 'volume_down' },
-    { 'pin_id': 10, 'callback' : 'volume_up' }
+    { 'pin_id': 9, 'callback' : 'rewind', 'bounce_time' : 2000 },
+    { 'pin_id': 11, 'callback' : 'toggle_pause', 'bounce_time' : 2000 },
+    { 'pin_id': 22, 'callback' : 'volume_down', 'bounce_time' : 1000 },
+    { 'pin_id': 10, 'callback' : 'volume_up', 'bounce_time' : 1000 }
 ]
 status_light_pin = 23
