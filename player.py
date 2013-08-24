@@ -176,14 +176,13 @@ class Player(object):
 
             self.book.book_id = book_id
             
-            self.mpd_client.seek(2,3)
-            #if progress:
+            if progress:
                 # resume at last known position
-                #self.book.set_progress(progress)
-                #self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
-            #else:
+                self.book.set_progress(progress)
+                self.mpd_client.seek(int(self.book.part) - 1, int(self.book.elapsed))
+            else:
                 # start playing from the beginning
-                #self.mpd_client.play()
+                self.mpd_client.play()
         
         self.status_light.action = 'blink'
         self.book.file_info = self.get_file_info()
