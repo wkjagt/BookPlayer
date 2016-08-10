@@ -19,7 +19,7 @@ from threading import Lock
 from book import Book
 import config
 import re
-
+import time
 
 class LockableMPDClient(MPDClient):
     def __init__(self, use_unicode=False):
@@ -33,7 +33,7 @@ class LockableMPDClient(MPDClient):
     def __enter__(self):
         self.acquire()
     def __exit__(self, type, value, traceback):
-        self.release() 
+        self.release()
 
 
 class Player(object):
@@ -42,7 +42,7 @@ class Player(object):
 
     def __init__(self, conn_details, status_light):
         """Setup a connection to MPD to be able to play audio.
-        
+
         Also update the MPD database with any new MP3 files that may have been added
         and clear any existing playlists.
         """
@@ -50,17 +50,25 @@ class Player(object):
         self.book = Book()
 
         self.mpd_client = LockableMPDClient()
-        with self.mpd_client:
-            self.mpd_client.connect(**conn_details)
+        self.init_mpd(conn_details)
 
-            self.mpd_client.update()
-            self.mpd_client.clear()
-            self.mpd_client.setvol(100)
+    def init_mpd(self, conn_details):
+        try:
+            print "Connecting to MPD."
+            with self.mpd_client:
+                self.mpd_client.connect(**conn_details)
 
+                self.mpd_client.update()
+                self.mpd_client.clear()
+                self.mpd_client.setvol(100)
+        except:
+            print "Connection to MPD failed. Trying again in 10 seconds."
+            time.sleep(10)
+            self.init_mpd(conn_details)
 
     def toggle_pause(self, channel):
         """Toggle playback status between play and pause"""
-        
+
         with self.mpd_client:
             state = self.mpd_client.status()['state']
             if state == 'play':
@@ -76,7 +84,7 @@ class Player(object):
         """Rewind by 20s"""
 
         self.status_light.interrupt('blink_fast', 3)
-        
+
         if self.is_playing():
             song_index = int(self.book.part) - 1
             elapsed = int(self.book.elapsed)
@@ -125,13 +133,13 @@ class Player(object):
 
     def stop(self):
         """On stopping, reset the current playback and stop and clear the playlist
-        
+
         In contract to pausing, stopping is actually meant to completely stop playing
         the current book and start listening to another"""
 
         self.playing = False
         self.book.reset()
-        
+
         self.status_light.action = 'on'
 
         with self.mpd_client:
@@ -141,7 +149,7 @@ class Player(object):
 
     def play(self, book_id, progress=None):
         """Play the book as defined in self.book
-        
+
         1. Get the parts from the current book and add them to the playlsit
         2. Start playing the playlist
         3. Immediately set the position the last know position to resume playback where
@@ -151,7 +159,7 @@ class Player(object):
 
             """sorting algorithm for files in playlist"""
             pattern = '(\d+)(-(\d+))?\.mp3'
-            
+
             try:
                 file1_index = re.search(pattern, file1).groups()[2] or 0
                 file2_index = re.search(pattern, file2).groups()[2] or 0
@@ -164,18 +172,18 @@ class Player(object):
         with self.mpd_client:
 
             parts = self.mpd_client.search('filename', book_id)
-    
+
             if not parts:
                 self.status_light.interrupt('blink_fast', 3)
                 return
 
             self.mpd_client.clear()
-            
+
             for part in sorted(parts, cmp=sorter):
                 self.mpd_client.add(part['file'])
 
             self.book.book_id = book_id
-            
+
             if progress:
                 # resume at last known position
                 self.book.set_progress(progress)
@@ -183,7 +191,7 @@ class Player(object):
             else:
                 # start playing from the beginning
                 self.mpd_client.play()
-        
+
         self.status_light.action = 'blink'
         self.book.file_info = self.get_file_info()
 
@@ -194,7 +202,7 @@ class Player(object):
     def finished_book(self):
         """return if a book has finished, in which case we need to delete it from the db
         or otherwise we could never listen to that particular book again"""
-        
+
         status = self.get_status()
         return self.book.book_id is not None and \
                status['state'] == 'stop' and \
